@@ -115,9 +115,31 @@ def creative_writing(s, prompt):
     s += sgl.user(prompt)  # type: ignore
     s += sgl.assistant(sgl.gen("content", temperature=0.8, top_p=0.9, presence_penalty=1.5, stop=["<think>", "</think>", "---", "END"]))
 
+def openai_code_generation(task):
+    """OpenAI SDK 代码生成 - 推荐方式"""
+    try:
+        response = openai_client.chat.completions.create(
+            model="default",
+            messages=[
+                {"role": "system", "content": "你是一个编程专家，请直接提供代码，不要显示思考过程和解释。请用 Python 编写。"},
+                {"role": "user", "content": f"请编写代码：{task}"}
+            ],
+            max_tokens=300,
+            temperature=0.3,
+            top_p=0.8,
+            presence_penalty=1.5,
+            extra_body={
+                "top_k": 20,
+                "chat_template_kwargs": {"enable_thinking": False},
+            },
+        )
+        return safe_get_content(response)
+    except Exception as e:
+        return f"Exception: {e}"
+
 @sgl.function
 def code_generation(s, task):
-    """代码生成示例 - 中文系统提示词版"""
+    """代码生成示例 - SGLang API（备选方案）"""
     s += sgl.system("你是一个编程专家，请直接提供代码，不要显示思考过程和解释。")  # type: ignore
     s += sgl.user(f"请编写代码：{task}")  # type: ignore
     s += sgl.assistant("```python\n")  # type: ignore
@@ -207,16 +229,27 @@ def main():
     except Exception as e:
         print(f"❌ SGLang 创意写作失败: {e}")
     
-    # 示例6: 代码生成（SGLang API）
-    print("\n6. 💻 代码生成测试")
+    # 示例6: 代码生成（OpenAI SDK - 推荐）
+    print("\n6. 💻 代码生成测试（OpenAI SDK）")
     print("-" * 50)
     try:
-        state = code_generation.run(task="实现冒泡排序")
+        result = openai_code_generation("实现冒泡排序")
         print(f"任务: 实现冒泡排序")
-        print(f"代码:\n```python\n{state['code'].strip()}\n```")
-        print("✅ SGLang 代码生成成功")
+        print(f"代码: {result}")
+        print("✅ OpenAI SDK 代码生成成功")
     except Exception as e:
-        print(f"❌ SGLang 代码生成失败: {e}")
+        print(f"❌ OpenAI SDK 代码生成失败: {e}")
+    
+    # 示例6B: SGLang API 代码生成（备选方案）
+    print("\n6B. 💻 SGLang API 代码生成（备选方案）")
+    print("-" * 50)
+    try:
+        state = code_generation.run(task="实现快速排序")
+        print(f"任务: 实现快速排序")
+        print(f"代码:\n```python\n{state['code'].strip()}\n```")
+        print("✅ SGLang API 代码生成成功")
+    except Exception as e:
+        print(f"❌ SGLang API 代码生成失败: {e}")
     
     # 示例7: OpenAI SDK 批量测试
     print("\n7. 🔥 OpenAI SDK 批量测试（推荐方式）")

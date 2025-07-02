@@ -1,28 +1,66 @@
-# SGLang Qwen3-14b 推理项目
+# SGLang Qwen3 推理服务
 
-本项目使用 [SGLang](https://github.com/sgl-project/sglang) 框架部署和加速 Qwen3-14b 模型的推理服务。
+<div align="center">
 
-## 项目简介
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
+[![SGLang](https://img.shields.io/badge/SGLang-0.4.0%2B-green.svg)](https://github.com/sgl-project/sglang)
+[![License](https://img.shields.io/badge/License-Apache_2.0-yellow.svg)](https://opensource.org/licenses/Apache-2.0)
 
-SGLang 是一个快速的大语言模型和视觉语言模型服务框架，通过协同设计后端运行时和前端语言，使模型交互更快速、更可控。
+基于 [SGLang](https://github.com/sgl-project/sglang) 的 Qwen3 模型高性能推理服务
 
-### 主要特性
+</div>
 
-- **快速后端运行时**: 提供高效的推理服务，支持 RadixAttention、零开销 CPU 调度、张量并行等优化
-- **灵活前端语言**: 提供直观的编程接口，支持链式生成、高级提示、控制流等
-- **广泛模型支持**: 支持 Qwen、Llama、Gemma、Mistral 等多种生成模型
+## 🚀 项目简介
 
-## 环境要求
+这是一个基于 SGLang 框架的 Qwen3 模型推理服务项目，提供了完整的模型部署、量化优化和API服务解决方案。
 
-- Python >= 3.8
-- CUDA 11.8+ 或 12.0+ (用于 GPU 加速)
-- 足够的 GPU 内存 (Qwen3-14b 模型约需要 28GB+ 显存)
+### ✨ 主要特性
 
-## 安装依赖
+- **🔥 高性能推理**：基于 SGLang 的优化后端，支持 RadixAttention、零开销调度等加速技术
+- **💾 智能量化**：支持多种量化方案（INT4/INT8/FP8），适配不同硬件配置
+- **🌐 标准API**：兼容 OpenAI API 格式，无缝集成现有应用
+- **⚙️ 灵活配置**：YAML配置文件 + 命令行参数，支持预设和自定义配置
+- **📱 多种接口**：支持 HTTP API、Python SDK、SGLang 前端语言
+- **🔧 易于部署**：完整的启动脚本和测试工具，开箱即用
 
-### 方法1: 使用 uv (推荐)
+### 🎯 支持的模型
+
+- Qwen3-4B / Qwen3-14B
+- 其他 SGLang 支持的模型（Llama、Gemma、Mistral 等）
+
+## 📋 系统要求
+
+### 硬件要求
+
+| 模型 | 最小显存 | 推荐显存 | 推荐配置 |
+|------|----------|----------|----------|
+| Qwen3-4B | 6GB | 12GB | RTX 3080+ |
+| Qwen3-14B | 12GB | 28GB | RTX 4090+ |
+
+### 软件要求
+
+- **操作系统**: Linux (推荐 Ubuntu 20.04+)
+- **Python**: 3.8+
+- **CUDA**: 11.8+ 或 12.0+
+- **GPU**: NVIDIA GPU (支持 CUDA)
+
+## 🛠️ 快速开始
+
+### 1. 克隆项目
 
 ```bash
+git clone https://github.com/wuyuVerse/sglang-qwen3-inference-.git
+cd sglang-qwen3-inference
+```
+
+### 2. 安装依赖
+
+#### 方法 A: 使用 uv (推荐)
+
+```bash
+# 安装 uv (如果未安装)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # 安装项目依赖
 uv sync
 
@@ -30,47 +68,82 @@ uv sync
 source .venv/bin/activate
 ```
 
-### 方法2: 使用 pip
+#### 方法 B: 使用 pip
 
 ```bash
-pip install sglang[all] torch transformers accelerate fastapi uvicorn requests
+pip install -r requirements.txt
+# 或者手动安装核心依赖
+pip install sglang[all] torch transformers accelerate fastapi uvicorn
 ```
 
-## 使用说明
+### 3. 启动服务
 
-### 1. 启动 SGLang 服务器
-
-#### 快速启动 (使用量化预设)
+#### 一键启动 (推荐)
 
 ```bash
-# 平衡配置 (推荐) - INT4量化，适合大多数场景
+# 平衡配置 - 适合大多数场景
 python launch_server.py --preset balanced
 
-# 高性能配置 - 无量化，适合高端GPU
+# 高性能配置 - 适合高端GPU
 python launch_server.py --preset high_performance
 
-# 内存优化配置 - 激进量化，适合显存不足
+# 内存优化配置 - 适合显存不足
 python launch_server.py --preset memory_optimized
-
-# 超低内存配置 - 最大压缩，适合低端GPU
-python launch_server.py --preset ultra_low_memory
 ```
 
-#### 自定义量化配置
+#### 自定义启动
 
 ```bash
-# 使用TorchAO INT4量化 (推荐)
+# 使用 TorchAO INT4 量化
 python launch_server.py --torchao-config int4wo-64
 
-# 使用FP8量化 (需要H100/H200)
-python launch_server.py --torchao-config fp8dq-per_tensor
+# 指定模型路径
+python launch_server.py --model-path /path/to/qwen3-model --preset balanced
 
-# 使用传统量化方法
-python launch_server.py --quantization fp8
-
-# 多卡部署
-python launch_server.py --preset balanced --tp-size 4
+# 多GPU部署
+python launch_server.py --preset balanced --tp-size 2
 ```
+
+### 4. 测试服务
+
+```bash
+# 基础连接测试
+python test_client.py
+
+# 自定义测试
+python test_client.py --prompt "介绍一下深度学习" --max-tokens 200
+```
+
+## 📚 详细使用指南
+
+### 🎛️ 配置选择指南
+
+#### 预设配置对比
+
+| 预设 | 量化方法 | 内存节省 | 推理速度 | 适用场景 |
+|------|----------|----------|----------|----------|
+| `high_performance` | 无量化 | 0% | 100% | 高端GPU，追求最佳性能 |
+| `balanced` | INT4 | ~50% | 85-95% | **推荐配置**，性能与内存平衡 |
+| `memory_optimized` | INT4+优化 | ~60% | 75-85% | 显存不足，优先可用性 |
+| `ultra_low_memory` | INT8 | ~75% | 60-75% | 低端GPU，最大兼容性 |
+
+#### 硬件配置建议
+
+```bash
+# RTX 3060 (8GB)
+python launch_server.py --preset ultra_low_memory --model-path /path/to/qwen3-4b
+
+# RTX 3080/4080 (10-16GB)  
+python launch_server.py --preset memory_optimized
+
+# RTX 4090 (24GB)
+python launch_server.py --preset balanced
+
+# A100/H100 (40GB+)
+python launch_server.py --preset high_performance
+```
+
+### 🔧 高级配置
 
 #### 使用配置文件
 
@@ -78,120 +151,45 @@ python launch_server.py --preset balanced --tp-size 4
 # 使用默认配置文件
 python launch_server.py --config server_config.yaml
 
-# 使用自定义配置文件
+# 使用示例配置文件
 python launch_server.py --config config_examples.yaml
 
-# 命令行参数会覆盖配置文件设置
-python launch_server.py --config server_config.yaml --torchao-config int8wo
+# 配置文件 + 命令行覆盖
+python launch_server.py --config server_config.yaml --torchao-config int4wo-128
 ```
 
-#### 启动参数说明
-
-**基础配置:**
-- `--model-path`: 模型路径 (默认: /data/local_disk0/wuyu/model/qwen/Qwen3-14b)
-- `--host`: 服务器主机地址 (默认: 0.0.0.0)
-- `--port`: 服务器端口 (默认: 30000)
-- `--preset`: 量化预设 (balanced, high_performance, memory_optimized, ultra_low_memory)
-
-**量化配置:**
-- `--torchao-config`: TorchAO量化方法 (int4wo-64, int4wo-128, int8wo, fp8dq-per_tensor等)
-- `--quantization`: 传统量化方法 (fp8, awq, gptq, bitsandbytes等)
-- `--kv-cache-dtype`: KV缓存数据类型 (auto, fp8_e5m2, int8)
-
-**性能优化:**
-- `--tp-size`: 张量并行度 (默认: 1)
-- `--mem-fraction-static`: 静态内存分配比例 (默认: 0.9)
-- `--enable-torch-compile`: 启用torch编译加速
-- `--enable-flashinfer`: 启用FlashInfer加速
-
-### 2. 测试服务器
-
-服务器启动后，使用测试脚本验证服务是否正常：
+#### TorchAO 量化配置
 
 ```bash
-# 基本测试
-python test_client.py
+# INT4 权重量化 (推荐)
+python launch_server.py --torchao-config int4wo-64   # 更快
+python launch_server.py --torchao-config int4wo-128  # 更准确
 
-# 自定义测试
-python test_client.py --host localhost --port 30000 --prompt "你好，介绍一下Python编程语言。"
+# INT8 量化
+python launch_server.py --torchao-config int8wo
+
+# FP8 量化 (需要 H100/H200)
+python launch_server.py --torchao-config fp8dq-per_tensor
 ```
 
-### 3. 量化配置选择指南
+### 🌐 API 使用
 
-#### 根据硬件选择配置
+#### HTTP API
 
-| GPU型号 | 显存大小 | 推荐配置 | 量化方法 | 预期性能 |
-|---------|----------|----------|----------|----------|
-| RTX 3060 | 8GB | `ultra_low_memory` | int8wo | 可运行，较慢 |
-| RTX 3080 | 12GB | `memory_optimized` | int4wo-64 | 良好性能 |
-| RTX 4090 | 24GB | `balanced` | int4wo-128 | 优秀性能 |
-| A100 40GB | 40GB | `balanced` | int4wo-128 | 优秀性能 |
-| A100 80GB | 80GB | `high_performance` | 无量化 | 最佳性能 |
-| H100 80GB | 80GB | `fp8_hopper`* | fp8dq-per_tensor | 最佳性能+节省内存 |
-
-*注：H100 配置需要在 `server_config.yaml` 中手动配置或使用 `config_examples.yaml`
-
-#### 量化方法对比
-
-| 量化方法 | 内存节省 | 推理速度 | 精度保持 | 硬件要求 |
-|----------|----------|----------|----------|----------|
-| 无量化 | 0% | 100% | 100% | 高显存 |
-| int4wo-128 | ~50% | 85-95% | 95-98% | 通用 |
-| int4wo-64 | ~50% | 80-90% | 90-95% | 通用 |
-| int8wo | ~25% | 70-80% | 98-99% | 通用 |
-| fp8dq-per_tensor | ~25% | 90-100% | 95-98% | H100/H200 |
-
-#### 场景推荐
-
-- **开发调试**: `high_performance` - 追求最高精度和稳定性  
-- **生产部署**: `balanced` - 平衡性能、内存和精度  
-- **资源受限**: `memory_optimized` - 优先考虑可部署性  
-- **边缘计算**: `ultra_low_memory` - 最大化内存节省  
-
-#### 实际使用示例
-
-```bash
-# 根据你的GPU选择对应配置
-# RTX 4090 用户
-python launch_server.py --preset balanced
-
-# H100 用户 (使用FP8优化)
-python launch_server.py --config config_examples.yaml --preset fp8_hopper_example
-
-# 自定义微调
-python launch_server.py --preset balanced --mem-fraction-static 0.8 --tp-size 2
-```
-
-### 4. 使用 SGLang Python API
-
-运行高级功能示例：
-
-```bash
-python sglang_example.py
-```
-
-该示例包含：
-- 多轮对话
-- 思维链推理
-- 结构化输出
-- 批量生成
-
-### 4. HTTP API 使用
-
-#### Completions API
+**Completions API**
 
 ```bash
 curl -X POST "http://localhost:30000/v1/completions" \
      -H "Content-Type: application/json" \
      -d '{
        "model": "default",
-       "prompt": "你好，请介绍一下自己。",
-       "max_tokens": 100,
+       "prompt": "介绍一下人工智能的发展历程",
+       "max_tokens": 200,
        "temperature": 0.7
      }'
 ```
 
-#### Chat Completions API
+**Chat Completions API**
 
 ```bash
 curl -X POST "http://localhost:30000/v1/chat/completions" \
@@ -199,85 +197,186 @@ curl -X POST "http://localhost:30000/v1/chat/completions" \
      -d '{
        "model": "default",
        "messages": [
-         {"role": "user", "content": "什么是人工智能？"}
+         {"role": "user", "content": "什么是机器学习？"}
        ],
-       "max_tokens": 100,
+       "max_tokens": 200,
        "temperature": 0.7
      }'
 ```
 
-## 性能优化建议
+#### Python SDK
 
-### 1. 硬件配置
+```python
+import requests
 
-- **单卡部署**: 至少需要 A100 80GB 或类似级别的 GPU
-- **多卡部署**: 可以使用张量并行 (`--tp` 参数) 分布到多张 GPU
-
-### 2. 内存优化
-
-```bash
-# 调整静态内存分配比例
-python launch_server.py --mem-fraction-static 0.8
-
-# 启用内存优化选项
-python launch_server.py --enable-flashinfer
+# 简单对话
+response = requests.post("http://localhost:30000/v1/chat/completions", 
+    json={
+        "model": "default",
+        "messages": [{"role": "user", "content": "你好"}],
+        "max_tokens": 100
+    }
+)
+print(response.json()["choices"][0]["message"]["content"])
 ```
 
-### 3. 批处理优化
+#### SGLang 前端语言
 
-- 使用连续批处理提高吞吐量
-- 适当调整 `max_tokens` 和 `temperature` 参数
+```python
+# 运行高级示例
+python sglang_example.py
 
-## 项目结构
+# 或者自定义使用
+import sglang as sgl
+
+sgl.set_default_backend(sgl.RuntimeEndpoint("http://localhost:30000"))
+
+@sgl.function
+def simple_chat(s, question):
+    s += sgl.user(question)
+    s += sgl.assistant(sgl.gen("answer", max_tokens=100))
+
+state = simple_chat.run(question="什么是深度学习？")
+print(state["answer"])
+```
+
+## 📁 项目结构
 
 ```
 sglang-qwen3-inference/
-├── launch_server.py      # 量化启动脚本 (支持YAML配置)
-├── server_config.yaml    # 主配置文件 (包含量化预设)
-├── config_examples.yaml  # 配置示例文件 (各种场景)
-├── test_client.py        # 客户端测试脚本
-├── sglang_example.py     # SGLang API 使用示例
-├── pyproject.toml        # 项目依赖配置
-├── README.md            # 项目说明文档
-└── .venv/               # 虚拟环境 (uv 创建)
+├── 📄 README.md                    # 项目文档
+├── 📄 pyproject.toml               # 项目配置和依赖
+├── 📄 uv.lock                      # 依赖锁定文件
+├── 📄 .gitignore                   # Git忽略文件
+├── 📄 .python-version              # Python版本指定
+│
+├── 🚀 launch_server.py             # 服务器启动脚本 (主入口)
+├── ⚙️ server_config.yaml           # 默认配置文件  
+├── ⚙️ config_examples.yaml         # 配置示例文件
+│
+├── 🧪 test_client.py               # HTTP API 测试客户端
+├── 🧪 test_openai_sdk_clean.py     # OpenAI SDK 兼容测试
+├── 🧪 sglang_example.py            # SGLang 前端语言示例
+├── 🧪 sglang_example_optimized.py  # 优化版示例
+│
+├── 📱 main.py                      # 简单启动入口
+└── 📂 .venv/                       # 虚拟环境 (uv创建)
 ```
 
-### 配置文件说明
+## 🔍 示例和测试
 
-- **server_config.yaml**: 主配置文件，包含所有支持的参数和4个内置量化预设
-- **config_examples.yaml**: 详细的配置示例，包含6种不同硬件场景的优化配置
-- **launch_server.py**: 增强的启动脚本，支持YAML配置文件和命令行参数
+### 基础功能测试
 
-## 故障排除
+```bash
+# 1. 启动服务器
+python launch_server.py --preset balanced
+
+# 2. 等待服务器启动完成 (看到 "Listening on http://0.0.0.0:30000")
+
+# 3. 在新终端中测试
+python test_client.py --prompt "介绍一下Python编程语言"
+```
+
+### 高级功能示例
+
+```bash
+# SGLang 前端语言示例 (支持多轮对话、结构化输出等)
+python sglang_example.py
+
+# OpenAI SDK 兼容性测试
+python test_openai_sdk_clean.py
+
+# 优化版示例 (批量处理、并发测试等)
+python sglang_example_optimized.py
+```
+
+## ⚠️ 故障排除
 
 ### 常见问题
 
-1. **显存不足**
-   ```
-   解决方案: 减少 mem-fraction-static 值或使用更多 GPU
-   ```
+**Q: 启动时显示 "CUDA out of memory"**
+```bash
+# 解决方案1: 使用更激进的量化配置
+python launch_server.py --preset ultra_low_memory
 
-2. **模型加载失败**
-   ```
-   检查模型路径是否正确，确保模型文件完整
-   ```
+# 解决方案2: 减少内存分配
+python launch_server.py --preset balanced --mem-fraction-static 0.7
 
-3. **服务器无法访问**
-   ```
-   检查防火墙设置，确保端口未被占用
-   ```
+# 解决方案3: 切换到更小的模型
+python launch_server.py --model-path /path/to/qwen3-4b --preset balanced
+```
 
-4. **推理速度慢**
-   ```
-   启用 FlashInfer 优化，调整批处理大小
-   ```
+**Q: 推理速度很慢**
+```bash
+# 解决方案1: 启用编译加速
+python launch_server.py --preset balanced --enable-torch-compile
 
-## 相关链接
+# 解决方案2: 使用更少量化
+python launch_server.py --preset high_performance
 
-- [SGLang 官方文档](https://docs.sglang.ai/)
-- [SGLang GitHub 仓库](https://github.com/sgl-project/sglang)
-- [Qwen 模型文档](https://qwen.readthedocs.io/)
+# 解决方案3: 检查是否使用了GPU
+python -c "import torch; print(torch.cuda.is_available())"
+```
 
-## 许可证
+**Q: API 请求超时**
+```bash
+# 增加超时时间，检查服务器状态
+curl http://localhost:30000/health
 
-本项目遵循 Apache 2.0 许可证。
+# 检查服务器日志
+python launch_server.py --preset balanced  # 查看输出日志
+```
+
+### 性能优化建议
+
+1. **选择合适的量化配置**：根据硬件选择预设配置
+2. **启用编译加速**：添加 `--enable-torch-compile` 参数
+3. **调整内存分配**：根据实际显存调整 `--mem-fraction-static`
+4. **使用多GPU**：大模型可以使用 `--tp-size` 进行张量并行
+
+## 🤝 贡献指南
+
+我们欢迎各种形式的贡献！
+
+1. **报告问题**：在 [Issues](https://github.com/wuyuVerse/sglang-qwen3-inference-/issues) 中报告 bug 或提出功能建议
+2. **提交代码**：Fork 项目，创建分支，提交 Pull Request
+3. **完善文档**：改进 README、添加示例或教程
+4. **分享经验**：分享使用经验和最佳实践
+
+### 开发环境搭建
+
+```bash
+# 克隆项目
+git clone https://github.com/wuyuVerse/sglang-qwen3-inference-.git
+cd sglang-qwen3-inference
+
+# 安装开发依赖
+uv sync --dev
+
+# 运行测试
+python -m pytest tests/  # (如果有测试的话)
+```
+
+## 📜 许可证
+
+本项目采用 [Apache 2.0 License](LICENSE) 许可证。
+
+## 🙏 致谢
+
+- [SGLang](https://github.com/sgl-project/sglang) - 强大的 LLM 服务框架
+- [Qwen](https://github.com/QwenLM/Qwen) - 优秀的开源语言模型
+- [TorchAO](https://github.com/pytorch/torchao) - 高效的模型量化库
+
+## 📞 联系方式
+
+- **项目主页**: https://github.com/wuyuVerse/sglang-qwen3-inference-
+- **问题反馈**: [GitHub Issues](https://github.com/wuyuVerse/sglang-qwen3-inference-/issues)
+- **邮箱**: 1074275896@qq.com
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对您有帮助，请给我们一个 Star！⭐**
+
+</div>
