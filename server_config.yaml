@@ -1,0 +1,198 @@
+# SGLang 服务器配置文件
+# 支持多种量化方式的完整配置
+
+# 基础模型配置
+model:
+  model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+  trust_remote_code: true
+  dtype: "bfloat16"  # auto, float16, bfloat16, float32
+  revision: null
+  tokenizer_path: null
+  tokenizer_mode: "auto"
+  
+# 服务器网络配置
+server:
+  host: "0.0.0.0"
+  port: 30000
+  api_key: null
+  ssl_keyfile: null
+  ssl_certfile: null
+
+# 量化配置 (核心部分)
+quantization:
+  # 量化方法选择 (只能选择一种)
+  # 可选值: null, "fp8", "awq", "gptq", "bitsandbytes", "marlin", "gguf", "awq_marlin", "gptq_marlin"
+  method: null
+  
+  # TorchAO 量化配置 (与上面的method互斥，优先使用torchao)
+  # 可选值: null, "int4wo-64", "int4wo-128", "int8wo", "int8dq", "fp8wo", "fp8dq-per_tensor", "fp8dq-per_row"
+  # "gemlite-4-64", "gemlite-8-64" (需要特定kernel支持)
+  torchao_config: "int4wo-64"  # 推荐用于Qwen3-14b的量化配置
+  
+  # KV缓存量化
+  kv_cache_dtype: "auto"  # auto, fp8_e5m2, fp8_e4m3, int8
+  
+# 内存管理配置
+memory:
+  # 静态内存分配比例 (0.8-0.9 推荐)
+  mem_fraction_static: 0.9
+  
+  # GPU内存利用率 (已弃用，使用mem_fraction_static)
+  gpu_memory_utilization: 0.9
+  
+  # 最大序列长度
+  max_model_len: null
+  context_length: 32768
+  
+  # 分块预填充大小 (用于长上下文优化)
+  chunked_prefill_size: 1024
+  
+  # 最大运行请求数
+  max_running_requests: 32
+
+# 并行配置
+parallel:
+  # 张量并行度
+  tensor_parallel_size: 1
+  tp_size: 1  # tensor_parallel_size的别名
+  
+  # 数据并行度
+  data_parallel_size: 1
+  dp_size: 1
+  
+  # 流水线并行度
+  pipeline_parallel_size: 1
+  pp_size: 1
+
+# 性能优化配置
+optimization:
+  # 启用torch编译
+  enable_torch_compile: false
+  
+  # 启用FlashInfer加速
+  enable_flashinfer: false
+  
+  # 禁用CUDA Graph
+  disable_cuda_graph: false
+  
+  # 启用混合块优化
+  enable_mixed_chunk: true
+  
+  # 调度策略
+  schedule_policy: "lpm"  # lpm, fcfs, dfs-weight
+  
+  # 调度策略参数
+  schedule_conservativeness: 1.0
+
+# 注意力机制配置
+attention:
+  # 注意力后端
+  attention_backend: "triton"  # flashinfer, triton, torch_naive
+  
+  # 启用前缀缓存
+  enable_radix_cache: true
+  
+  # 禁用前缀缓存
+  disable_radix_cache: false
+  
+  # 启用数据并行注意力 (适用于DeepSeek等MLA模型)
+  enable_dp_attention: false
+
+# 分布式配置
+distributed:
+  # 分布式后端
+  distributed_backend: "nccl"
+  
+  # 分布式超时时间
+  dist_timeout: 1800
+  
+  # 多节点配置
+  nnodes: 1
+  node_rank: 0
+  nproc_per_node: null
+  master_addr: null
+  master_port: null
+
+# 推测解码配置
+speculative_decoding:
+  enable: false
+  algorithm: null  # EAGLE, MEDUSA
+  num_steps: 1
+  eagle_topk: 1
+  num_draft_tokens: 2
+
+# 采样配置
+sampling:
+  # 默认采样参数
+  temperature: 0.7
+  top_p: 0.9
+  top_k: -1
+  max_tokens: 1024
+  stop: []
+  
+# 日志配置
+logging:
+  log_level: "info"
+  log_stats: false
+  show_time_cost: false
+  
+# 调试配置
+debug:
+  profile_mode: null
+  start_profile_batch: 5
+  end_profile_batch: 15
+  nsight_profile: false
+
+# 兼容性配置
+compatibility:
+  # 跳过tokenizer初始化
+  skip_tokenizer_init: false
+  
+  # 聊天模板 - 简洁格式，避免思考过程
+  chat_template: "{% for message in messages %}{% if message['role'] == 'user' %}Human: {{ message['content'] }}\n{% elif message['role'] == 'assistant' %}Assistant: {{ message['content'] }}\n{% endif %}{% endfor %}Assistant:"
+  
+  # 工具调用解析器
+  tool_call_parser: null
+
+# 高级量化配置 (针对不同场景的推荐配置)
+quantization_presets:
+  # 高性能配置 (内存充足)
+  high_performance:
+    torchao_config: null
+    dtype: "float16"
+    enable_torch_compile: true
+    enable_flashinfer: true
+    
+  # 内存优化配置 (显存不足)
+  memory_optimized:
+    torchao_config: "int4wo-64"
+    dtype: "float16"
+    kv_cache_dtype: "fp8_e5m2"
+    mem_fraction_static: 0.8
+    chunked_prefill_size: 512
+    
+  # 平衡配置 (推荐)
+  balanced:
+    torchao_config: "int4wo-128"
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    mem_fraction_static: 0.9
+    enable_flashinfer: true
+    enable_torch_compile: false
+    
+  # 超低内存配置 (极限内存不足)
+  ultra_low_memory:
+    torchao_config: "int8wo"
+    dtype: "float16"
+    kv_cache_dtype: "int8"
+    mem_fraction_static: 0.7
+    chunked_prefill_size: 256
+    max_running_requests: 8
+
+# 使用说明:
+# 1. 根据硬件情况选择合适的量化配置
+# 2. 如果显存充足(>40GB)，使用 high_performance 配置
+# 3. 如果显存适中(20-40GB)，使用 balanced 配置  
+# 4. 如果显存不足(<20GB)，使用 memory_optimized 或 ultra_low_memory 配置
+# 5. torchao_config 和 quantization.method 不能同时使用
+# 6. 量化可能会轻微影响模型精度，请根据业务需求选择 

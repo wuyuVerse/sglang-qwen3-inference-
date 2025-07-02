@@ -1,0 +1,199 @@
+# SGLang 量化配置示例
+# 根据不同硬件和需求场景的推荐配置
+
+# ==================== 场景1: 高端GPU，高性能需求 ====================
+# 硬件: H100/A100 80GB+, 充足显存
+# 特点: 追求最高推理速度，内存充足
+high_performance_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    # 不使用量化，追求最高精度和速度
+    torchao_config: null
+    kv_cache_dtype: "auto"
+    
+  memory:
+    mem_fraction_static: 0.9
+    context_length: 32768
+    max_running_requests: 64
+    
+  optimization:
+    enable_torch_compile: true
+    enable_flashinfer: true
+    disable_cuda_graph: false
+    
+  parallel:
+    tp_size: 1
+
+# ==================== 场景2: 中端GPU，平衡配置 ====================  
+# 硬件: RTX 4090/3090, A6000, 20-30GB显存
+# 特点: 平衡性能和内存使用
+balanced_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    # INT4量化，group_size=128，较好的精度保持
+    torchao_config: "int4wo-128"
+    kv_cache_dtype: "auto"
+    
+  memory:
+    mem_fraction_static: 0.9
+    context_length: 16384
+    chunked_prefill_size: 1024
+    max_running_requests: 32
+    
+  optimization:
+    enable_torch_compile: false  # 降低编译开销
+    enable_flashinfer: true
+    disable_cuda_graph: false
+    
+  parallel:
+    tp_size: 1
+
+# ==================== 场景3: 内存受限，优化显存使用 ====================
+# 硬件: RTX 3080/4080, V100, 12-20GB显存  
+# 特点: 显存不足，需要积极的内存优化
+memory_optimized_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    # 更激进的INT4量化，group_size=64
+    torchao_config: "int4wo-64"
+    kv_cache_dtype: "fp8_e5m2"  # KV缓存也使用FP8量化
+    
+  memory:
+    mem_fraction_static: 0.8  # 降低内存使用
+    context_length: 8192      # 限制上下文长度
+    chunked_prefill_size: 512 # 更小的分块大小
+    max_running_requests: 16  # 限制并发数
+    
+  optimization:
+    enable_torch_compile: false
+    enable_flashinfer: true
+    disable_cuda_graph: true  # 节省显存
+    
+  parallel:
+    tp_size: 1
+
+# ==================== 场景4: 极低内存，最大压缩 ====================
+# 硬件: RTX 3060/4060, 8-12GB显存
+# 特点: 极限内存不足，牺牲性能换取可运行性
+ultra_low_memory_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    # INT8量化，最大程度压缩
+    torchao_config: "int8wo"
+    kv_cache_dtype: "int8"
+    
+  memory:
+    mem_fraction_static: 0.7  # 保守的内存分配
+    context_length: 4096      # 较短上下文
+    chunked_prefill_size: 256 # 最小分块
+    max_running_requests: 8   # 最少并发
+    
+  optimization:
+    enable_torch_compile: false
+    enable_flashinfer: true
+    disable_cuda_graph: true
+    enable_mixed_chunk: false # 禁用混合块优化
+    
+  parallel:
+    tp_size: 1
+
+# ==================== 场景5: 多卡部署，高吞吐 ====================
+# 硬件: 2x A100/H100 或 4x RTX 4090
+# 特点: 多GPU并行，追求高吞吐量
+multi_gpu_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    torchao_config: "int4wo-128"
+    kv_cache_dtype: "auto"
+    
+  memory:
+    mem_fraction_static: 0.9
+    context_length: 32768
+    max_running_requests: 128  # 多卡支持更多并发
+    
+  optimization:
+    enable_torch_compile: true
+    enable_flashinfer: true
+    disable_cuda_graph: false
+    
+  parallel:
+    tp_size: 2  # 或 4，根据GPU数量调整
+    
+  distributed:
+    dist_timeout: 3600  # 多卡初始化可能需要更长时间
+
+# ==================== 场景6: FP8量化，Hopper架构 ====================
+# 硬件: H100/H200 (支持原生FP8)
+# 特点: 使用新一代FP8量化，平衡精度和性能
+fp8_hopper_example:
+  model:
+    model_path: "/data/local_disk0/wuyu/model/qwen/Qwen3-4B"
+    dtype: "float16"
+    trust_remote_code: true
+    
+  quantization:
+    # FP8动态量化，适合Hopper架构
+    torchao_config: "fp8dq-per_tensor"
+    kv_cache_dtype: "fp8_e5m2"
+    
+  memory:
+    mem_fraction_static: 0.9
+    context_length: 32768
+    max_running_requests: 48
+    
+  optimization:
+    enable_torch_compile: true
+    enable_flashinfer: true
+    disable_cuda_graph: false
+    
+  parallel:
+    tp_size: 1
+
+# ==================== 使用说明 ====================
+usage_guide:
+  commands:
+    # 使用预设配置
+    - "python launch_server.py --preset balanced"
+    
+    # 使用自定义配置文件
+    - "python launch_server.py --config config_examples.yaml"
+    
+    # 命令行覆盖配置文件设置
+    - "python launch_server.py --preset balanced --torchao-config int8wo"
+    
+    # 多GPU部署
+    - "python launch_server.py --preset balanced --tp-size 4"
+    
+  hardware_recommendations:
+    RTX_3060_8GB: "ultra_low_memory"
+    RTX_3080_12GB: "memory_optimized" 
+    RTX_4090_24GB: "balanced"
+    A100_40GB: "balanced"
+    A100_80GB: "high_performance"
+    H100_80GB: "fp8_hopper 或 high_performance"
+    
+  performance_expectations:
+    int4wo-64: "内存节省: ~50%, 速度: ~80-90%"
+    int4wo-128: "内存节省: ~50%, 速度: ~85-95%"
+    int8wo: "内存节省: ~25%, 速度: ~70-80%"
+    fp8dq-per_tensor: "内存节省: ~25%, 速度: ~90-100% (需H100)" 

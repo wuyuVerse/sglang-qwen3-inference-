@@ -1,0 +1,32 @@
+[project]
+name = "sglang-qwen3-inference"
+version = "0.1.0"
+description = "SGLang inference project for Qwen3-14b model"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "sglang>=0.4.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "accelerate>=0.20.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "requests>=2.25.0",
+    "pyyaml>=6.0.0",
+    "orjson>=3.8.0",
+    "uvloop>=0.21.0",
+    "zmq>=0.0.0",
+]
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+
+[[tool.uv.index]]
+name = "douban"
+url = "https://pypi.douban.com/simple/"
